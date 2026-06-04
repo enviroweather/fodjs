@@ -7,7 +7,7 @@
 	import { legacyFodModel, type ModelOutput } from '$lib/fodModel';
 
 	const DATASET_LABELS: Record<Dataset, string> = {
-		pc: 'PC – Plant Condition',
+		pc: 'PC – PC',
 		ws: 'WS – Wind Speed',
 		wd: 'WD – Wind Direction'
 	};
