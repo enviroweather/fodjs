@@ -4,6 +4,7 @@
 		type Dataset,
 		type WindDataRecord
 	} from '$lib/windData';
+	
 	import { legacyFodModel, type ModelOutput } from '$lib/fodModel';
 
 	const DATASET_LABELS: Record<Dataset, string> = {
@@ -163,10 +164,12 @@
 				<p class="error">{modelError}</p>
 			{/if}
 
+			{@debug modelResult}
 			{#if modelResult}
 				<div class="model-results">
 					<h3>Setback distances for E = {odorIndex}</h3>
 					<p class="units-note">Distances are miles (D = a·E<sup>b</sup> empirical formula).</p>
+
 					<table>
 						<thead>
 							<tr>
@@ -177,12 +180,12 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each modelResult.byDirection as dir}
+							{#each modelResult.setbackTable as row}
 								<tr>
-									<td class="dir-label">{dir.label}</td>
-									<td class="num">{dir.d5pct.toFixed(2)}</td>
-									<td class="num">{dir.d3pct.toFixed(2)}</td>
-									<td class="num">{dir.d1_5pct.toFixed(2)}</td>
+									<td class="dir-label">{row.label}</td>
+									<td class="num">{row.d5pct.toFixed(2)}</td>
+									<td class="num">{row.d3pct.toFixed(2)}</td>
+									<td class="num">{row.d1_5pct.toFixed(2)}</td>
 								</tr>
 							{/each}
 						</tbody>

@@ -17,11 +17,23 @@
 export type DirectionResult = {
 	/** Compass direction label (N, NNE, …, NNW). */
 	label: string;
-	/** Setback distance for ≤5% occurrence threshold (feet?). */
+	/** Setback distance for ≤5% occurrence threshold (miles). */
 	d5pct: number;
-	/** Setback distance for ≤3% occurrence threshold (feet?). */
+	/** Setback distance for ≤3% occurrence threshold (miles). */
 	d3pct: number;
-	/** Setback distance for ≤1.5% occurrence threshold (feet?). */
+	/** Setback distance for ≤1.5% occurrence threshold (miles)). */
+	d1_5pct: number;
+};
+
+/** One row of summarized output per compass direction. */
+export type SetbackTableRows = {
+	/** Compass direction label (N, NNE, …, NNW). */
+	label: string;
+	/** Setback distance for ≤5% occurrence threshold (miles). */
+	d5pct: number;
+	/** Setback distance for ≤3% occurrence threshold (miles). */
+	d3pct: number;
+	/** Setback distance for ≤1.5% occurrence threshold (miles)). */
 	d1_5pct: number;
 };
 
@@ -31,6 +43,8 @@ export type ModelOutput = {
 	D: number[][];
 	/** 16-entry summary, one per compass direction, clockwise from N. */
 	byDirection: DirectionResult[];
+	/** one per compass direction, all 80 directions, clockwise from N. */
+	setbackTable: SetbackTableRows[];
 };
 
 // ─── compass direction metadata ──────────────────────────────────────────────
@@ -54,28 +68,48 @@ export const DIRECTION_LABELS: string[] = [
 	'NNW'
 ];
 
+
 /**
  * Representative row in D[80][3] for each compass direction.
  * (All 5 rows in a block are identical; we just read the first one.)
  */
 const DIRECTION_ROW: Record<string, number> = {
 	N: 0,
-	NNE: 2,
-	NE: 7,
-	ENE: 12,
-	E: 17,
-	ESE: 22,
-	SE: 27,
-	SSE: 32,
-	S: 37,
-	SSW: 42,
-	SW: 47,
-	WSW: 52,
-	W: 57,
-	WNW: 62,
-	NW: 67,
-	NNW: 72
+	NNE: 5,
+	NE: 10,
+	ENE: 15,
+	E: 20,
+	ESE: 25,
+	SE: 30,
+	SSE: 35,
+	S: 40,
+	SSW: 45,
+	SW: 50,
+	WSW: 55,
+	W: 60,
+	WNW: 65,
+	NW: 70,
+	NNW: 75
 };
+
+const SETBACK_TABLE_ROW_LABELS: [string] = [
+		'N','-','-','-','-', 
+		'NNE','-','-','-','-',
+		'NE','-','-','-','-', 
+		'ENE','-','-','-','-',
+		'E','-','-','-','-',
+		'ESE','-','-','-','-', 
+		'SE','-','-','-','-',
+		'SSE','-','-','-','-',
+		'S','-','-','-','-', 
+		'SSW','-','-','-','-',
+		'SW','-','-','-','-',
+		'WSW','-','-','-','-', 
+		'W','-','-','-','-',
+		'WNW','-','-','-','-',
+		'NW','-','-','-','-', 
+		'NNW','-','-','-','-'
+	];
 
 // ─── setback-distance coefficients (D = a·E^b, output in feet) ───────────────
 // original comment inside the python program is incorrect
@@ -341,7 +375,20 @@ export function legacyFodModel(
 		}
 	}
 
-	// ── Summarise by compass direction ────────────────────────────────────────
+	// direction table for human viewing, all rows
+	const setbackTable:SetbackTableRows[] = SETBACK_TABLE_ROW_LABELS.map((label, row) => {
+		return {
+			label, 
+			d5pct: D[row][0],
+			d3pct: D[row][1],
+			d1_5pct: D[row][2]
+		 }
+
+	});
+
+	// Summarize by compass direction 
+	// only rows on the exact compass direction
+	// this was a start but is not used and should be removed
 	const byDirection: DirectionResult[] = DIRECTION_LABELS.map((label) => {
 		const row = DIRECTION_ROW[label];
 		return {
@@ -352,5 +399,5 @@ export function legacyFodModel(
 		};
 	});
 
-	return { D, byDirection };
+	return { D, byDirection, setbackTable };
 }
