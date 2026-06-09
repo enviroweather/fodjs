@@ -5,9 +5,9 @@
  *   Jacobson et al. (2005) OFFSET Part I.  Transactions of the ASAE 48(6).
  *   Guo et al.      (2005) OFFSET Part II. Transactions of the ASAE 48(6).
  *
- * NOTE on numpy-ts: the Python model's core operations are boolean fancy
- * indexing (e.g. `arr[bool_mask]`), which numpy-ts does not support. The
- * algorithm is implemented here with plain TypeScript typed arrays, which is
+ * NOTE on numpy from python: the Python model's core operations are boolean fancy
+ * indexing (e.g. `arr[bool_mask]`), which javscript version numpy-ts does not support. 
+ * The algorithm is implemented here with plain TypeScript typed arrays, which is
  * functionally equivalent and avoids adding WASM to the browser bundle.
  */
 
