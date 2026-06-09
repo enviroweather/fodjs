@@ -78,7 +78,7 @@ const DIRECTION_ROW: Record<string, number> = {
 	NNW: 75
 };
 
-const SETBACK_TABLE_ROW_LABELS: [string] = [
+const SETBACK_TABLE_ROW_LABELS: string[] = [
 		'N','-','-','-','-', 
 		'NNE','-','-','-','-',
 		'NE','-','-','-','-', 
@@ -213,7 +213,7 @@ const ROW_RANGES: Array<Array<[number, number]>> = [
 /**
  * OFFSET setback-distance model.
  *
- * @param WD          Flat array of wind directions (degrees, 0–360).
+ * @param WD          Flat array of wind directions (degrees, 0-360).
  * @param WS          Flat array of wind speeds (m/s), same length as WD.
  * @param PC          Flat array of Pasquill stability classes (4, 5, or 6).
  * @param odor_index  Total odor emission factor E (product of source area,
@@ -310,7 +310,7 @@ export function legacyFodModel(
 
 			const pc = PC[i];
 			const ws = WS[i];
-			// Mutually-exclusive OFFSET wind-stability classes (1–6):
+			// Mutually-exclusive OFFSET wind-stability classes (1-6):
 			if (pc === 6 && ws <= 1.3) c0++;
 			else if (pc === 6 && ws > 1.3 && ws <= 3.1) c1++;
 			else if (pc === 5 && ws <= 3.1) c2++;
@@ -361,7 +361,7 @@ export function legacyFodModel(
 		}
 	}
 
-	// direction table for human viewing, all rows
+	// ── Step 5: direction table for human viewing, all rows
 	const setbackTable:SetbackTableRows[] = SETBACK_TABLE_ROW_LABELS.map((label, row) => {
 		return {
 			label, 
