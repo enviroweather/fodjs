@@ -1,11 +1,14 @@
 <script lang='ts'>
-import { geodeticDistance } from '$lib/geo.js';
+import { geodeticDistance,closestGridPoint } from '$lib/geo.js';
+// import { LAT, LON } from '$lib/data/narr_latlon.json';
+
 
 let distanceMiles = $state('');
 let bearing=$state(0);
 let startingLat = $state(45)
 let startingLon = $state(-83)
 let endCoordinates = $state({"lat": 0, "lon":0})
+
 let endLat = $state(0);
 let endLon = $state(0);
 
@@ -13,6 +16,14 @@ let Lat = $state(45)
 let Lon = $state(-83)
 let gridX = $state(0)
 let gridY = $state(0)
+
+
+
+function latlon2gridxy() {
+    var result = closestGridPoint(Lat, Lon)
+    gridX = result[0]
+    gridY = result[1]
+}
 
 function distanceTest(){
     const result = geodeticDistance(startingLat, startingLon, distanceMiles, bearing);
@@ -26,19 +37,42 @@ function distanceTest(){
 <main>
 <h2>hey! just testing</h2>
 
-<h3>calc geodetic vincenty distance</h3>
-<form onsubmit={(e) => { e.preventDefault(); distanceTest(); }} class="form">
-<p>
+<h3>get grid X,Y</h3>
+<form onsubmit={(e) => { e.preventDefault(); latlon2gridxy(); }} class="form">
+    <p>
     <label>
-        distance (miles)
-        <input type="number" bind:value={distanceMiles} required />
+        Latitude (Y)
+        <input type="number" bind:value={Lat} required />
     </label>
     </p>
     <p>
     <label>
-        Bearing (degrees from 0 N)
-        <input type="number" min="0" max="359" bind:value={bearing} required />
+        Longitude (X)
+        <input type="number" bind:value={Lon} required />
     </label>
+    </p>
+    <p>
+    <button type="submit">
+        find X,Y
+    </button></p>
+</form>
+
+<p>X:{gridX}, Y:{gridY} </p>
+
+<hr>
+<h3>calc geodetic vincenty distance</h3>
+<form onsubmit={(e) => { e.preventDefault(); distanceTest(); }} class="form">
+    <p>
+        <label>
+            distance (miles)
+            <input type="number" bind:value={distanceMiles} required />
+        </label>
+    </p>
+    <p>
+        <label>
+            Bearing (degrees from 0 N)
+            <input type="number" min="0" max="359" bind:value={bearing} required />
+        </label>
     </p>
     <p>
     <label>
@@ -72,6 +106,9 @@ function distanceTest(){
     </label>
     </p>
 </form>
+
+<h3>test: this should be [2,0]</h3>
+<p>[{gridX}, {gridY}]</p>
 </main>
 
 <layout>
