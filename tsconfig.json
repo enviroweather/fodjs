@@ -1,4 +1,9 @@
 {
+	// these are for the repl and should be removed soon
+	"resolveJsonModule": true,
+	"esModuleInterop": true,
+
+
 	"extends": "./.svelte-kit/tsconfig.json",
 	"compilerOptions": {
 		"rewriteRelativeImportExtensions": true,
@@ -18,3 +23,4 @@
 	// To make changes to top-level options such as include and exclude, we recommend extending
 	// the generated config; see https://svelte.dev/docs/kit/configuration#typescript
 }
+
