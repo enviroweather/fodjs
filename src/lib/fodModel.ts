@@ -14,18 +14,6 @@
 // ─── types ───────────────────────────────────────────────────────────────────
 
 /** One row of summarized output per compass direction. */
-export type DirectionResult = {
-	/** Compass direction label (N, NNE, …, NNW). */
-	label: string;
-	/** Setback distance for ≤5% occurrence threshold (miles). */
-	d5pct: number;
-	/** Setback distance for ≤3% occurrence threshold (miles). */
-	d3pct: number;
-	/** Setback distance for ≤1.5% occurrence threshold (miles)). */
-	d1_5pct: number;
-};
-
-/** One row of summarized output per compass direction. */
 export type SetbackTableRows = {
 	/** Compass direction label (N, NNE, …, NNW). */
 	label: string;
@@ -41,8 +29,6 @@ export type SetbackTableRows = {
 export type ModelOutput = {
 	/** Raw D matrix, shape [80][3]. Each block of 5 rows is identical. */
 	D: number[][];
-	/** 16-entry summary, one per compass direction, clockwise from N. */
-	byDirection: DirectionResult[];
 	/** one per compass direction, all 80 directions, clockwise from N. */
 	setbackTable: SetbackTableRows[];
 };
@@ -386,18 +372,5 @@ export function legacyFodModel(
 
 	});
 
-	// Summarize by compass direction 
-	// only rows on the exact compass direction
-	// this was a start but is not used and should be removed
-	const byDirection: DirectionResult[] = DIRECTION_LABELS.map((label) => {
-		const row = DIRECTION_ROW[label];
-		return {
-			label,
-			d5pct: D[row][0],
-			d3pct: D[row][1],
-			d1_5pct: D[row][2]
-		};
-	});
-
-	return { D, byDirection, setbackTable };
+	return { D, setbackTable };
 }
