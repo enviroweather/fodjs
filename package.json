@@ -29,7 +29,6 @@
 		"prettier-plugin-svelte": "^3.5.1",
 		"svelte": "^5.55.2",
 		"svelte-check": "^4.4.6",
-		"svelte-inspect-value": "^0.11.3",
 		"typescript": "^6.0.2",
 		"typescript-eslint": "^8.58.1",
 		"vite": "^8.0.7"
