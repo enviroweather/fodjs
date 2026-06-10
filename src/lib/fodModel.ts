@@ -101,9 +101,7 @@ const SETBACK_TABLE_ROW_LABELS: string[] = [
 // original comment inside the python program is incorrect
 //  # Total odor emission factor (E):
 //  # Product of source area, odor emission number, and odor control factor, 
-//  # divided by 10000, summed over all sources.
-// I don't think this is in feet 
-// AND I don't think the odor index is ÷ 10000 here, maybe in front ent
+//  # in miles
 
 
 const COEF: Array<{ a: number; b: number }> = [
@@ -374,3 +372,6 @@ export function legacyFodModel(
 
 	return { D, setbackTable };
 }
+
+
+
