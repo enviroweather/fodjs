@@ -1,6 +1,14 @@
-<script lang="ts">
+<script lang="ts">	
 
-	import { geodeticDistance,closestGridPoint } from '$lib/geo.js';
+	import { 
+		//geodeticDistance, // no longer needed 
+		closestGridPoint, 
+		setbackToGeoJSON,
+		calcSetbackCoordinates,
+		type simpleLatLon, 
+		type setbackCoordinates
+
+	} from '$lib/geo.js';
 
 	import {
 		WindData,
@@ -11,9 +19,9 @@
 	import { legacyFodModel, type ModelOutput } from '$lib/fodModel';
 
 	const DATASET_LABELS: Record<Dataset, string> = {
-		pc: 'PC – PC',
-		ws: 'WS – Wind Speed',
-		wd: 'WD – Wind Direction'
+		pc: 'PC - PC',
+		ws: 'WS - Wind Speed',
+		wd: 'WD - Wind Direction'
 	};
 
 	
@@ -22,8 +30,8 @@
 	let Lon = $state(-83)
 
 	// ── wind data state ───────────────────────────────────────────────────────
-	let gridX = $state(null);
-	let gridY = $state(null);
+	// let gridX = $state<number | null>(null);
+	// let gridY = $state<number | null>(null);
 	let windData = $state<WindDataRecord | null>(null);
 	let flattenedByDataset = $derived(windData ? WindData.flattenAll(windData) : null);
 	let loading = $state(false);
@@ -33,16 +41,23 @@
 	let odorIndex = $state('');
 
 	let modelResult = $state<ModelOutput | null>(null);
+	let modelReady = $state(false)
 	let modelRunning = $state(false);
 	let modelError = $state('');
 
-	function latlon2gridxy() {
- 		var result = closestGridPoint(Lat, Lon)
-    	gridX = result[0]
-    	gridY = result[1]
-	}
+	// -- Map 
 
-	// async?
+	// todo use $derived here? 
+	let gridXY = $derived(closestGridPoint(Lat, Lon))
+	let gridX = $derived(gridXY[0])
+	let gridY = $derived(gridXY[1])
+
+	// function latlon2gridxy() {
+ 	// 	var result = closestGridPoint(Lat, Lon)
+    // 	gridX = result[0]
+    // 	gridY = result[1]
+	// }
+
 	async function runModel() {
 		modelError = '';
 		modelResult = null;
@@ -56,24 +71,58 @@
 			modelError = 'Load wind data first.';
 			return;
 		}
-
 		modelRunning = true;
-		// Yield to the browser so the spinner can paint, then compute.
-		setTimeout(() => {
-			try {
-				modelResult = legacyFodModel(
-					flattenedByDataset!.wd,
-					flattenedByDataset!.ws,
-					flattenedByDataset!.pc,
-					E
-				);
-			} catch (err) {
-				modelError = err instanceof Error ? err.message : 'Model error';
-			} finally {
-				modelRunning = false;
-			}
-		}, 0);
+		try {
+			modelResult = legacyFodModel(
+				flattenedByDataset!.wd,
+				flattenedByDataset!.ws,
+				flattenedByDataset!.pc,
+				E
+			);
+		} catch (err) {
+			modelError = err instanceof Error ? err.message : 'Model error';
+		} finally {
+			modelRunning = false;
+		}		
 	}
+
+	// previous version of this function initiated a spinner but 
+	// that is not needed and makes it hard to create anything 
+	// that depends on await'ing this results. 
+	// TODO delete this when confident we wont' need it
+	// async function runModel() {
+	// 	modelError = '';
+	// 	modelResult = null;
+
+	// 	const E = parseFloat(odorIndex);
+	// 	if (isNaN(E) || E <= 0) {
+	// 		modelError = 'Odor index (E) must be a positive number.';
+	// 		return;
+	// 	}
+	// 	if (!flattenedByDataset) {
+	// 		modelError = 'Load wind data first.';
+	// 		return;
+	// 	}
+
+	// 	modelRunning = true;
+	// 	// Yield to the browser so the spinner can paint, then compute.
+	// 	setTimeout(() => {
+	// 		try {
+	// 			modelResult = legacyFodModel(
+	// 				flattenedByDataset!.wd,
+	// 				flattenedByDataset!.ws,
+	// 				flattenedByDataset!.pc,
+	// 				E
+	// 			);
+
+	// 		} catch (err) {
+	// 			modelError = err instanceof Error ? err.message : 'Model error';
+	// 		} finally {
+	// 			modelRunning = false;
+	// 		}
+	// 	}, 0);
+		
+	// }
 
 	// async is required
 	async function fetchWindData() {
@@ -110,12 +159,26 @@
 		}
 	}
 
-	async function getAndRun() {
-		latlon2gridxy();
-		await fetchWindData();
-		runModel();
 
+	let sbGJ = $state('');
+
+	async function getAndRun() {
+		if(gridX && gridY) {
+			// latlon2gridxy();
+			await fetchWindData();
+			// the model could be derived from winddata
+			await runModel(); // NoSpinner
+			
+			if (modelResult) {
+				const sbm = calcSetbackCoordinates(Lat, Lon, modelResult.D);
+				sbGJ = setbackToGeoJSON(sbm);
+				
+			} else {				
+				sbGJ = ("['error running model']")
+			}
+		}
 	}
+
 </script>
 
 
@@ -141,7 +204,9 @@
 	</button>
 </form>
 
-
+<!-- this form is for reading S3 data given an X,Y, which are now 
+     derived from Lat/Lon so disabled but saved for debugging if needed
+-->
 <!-- 
 <form onsubmit={(e) => { e.preventDefault(); fetchWindData(); }}>
 	<label>
@@ -215,6 +280,15 @@
 
 		{@debug modelResult}
 		{#if modelResult}
+
+			<div class="model-results">
+				<h2>setback GeoJSON</h2>
+				<pre>
+{sbGJ}
+				</pre>
+
+			</div>
+
 			<div class="model-results">
 				<h3>Setback distances for E = {odorIndex}</h3>
 				<p class="units-note">Distances are miles (D = a·E<sup>b</sup> empirical formula).</p>
@@ -240,6 +314,10 @@
 					</tbody>
 				</table>
 			</div>
+
+
+
+
 		{/if}
 	</section>
 {/if}

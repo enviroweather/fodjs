@@ -16,24 +16,101 @@ type gridPoint = {
     x: number
 }
 
+type simpleLatLon = {lat:number, lon:number}
+
+
+type setbackCoordinates = {
+    center: simpleLatLon,
+    coords5pct: simpleLatLon[],
+    coords3pct:simpleLatLon[],
+    coords1_5pct:simpleLatLon[]
+} 
+
+const metersPerMile:number = 1609.344;
 
 // 1 mile equals 1609.344 meters.
 // https://www.movable-type.co.uk/scripts/geodesy/docs/module-latlon-ellipsoidal-vincenty-LatLonEllipsoidal_Vincenty.html#destinationPoint
 // destinationPoint(distance, initialBearing) → {LatLon}
-function geodeticDistance(start_lat, start_lon, distanceMiles, bearing) {
+function geodeticDistance(
+                    start_lat:number, 
+                    start_lon:number, 
+                    distanceMiles:number, 
+                    bearing:number):[number, number] {
+
     const startingPoint = new LatLon(start_lat, start_lon);
-    const distanceMeters = distanceMiles * 1609.344 ;
+    const distanceMeters = distanceMiles * metersPerMile;
+
     let destLatLon = startingPoint.destinationPoint(distanceMeters, bearing);
-    return {"lat": destLatLon.lat,"lon": destLatLon.lon};
+    // return {"lat": destLatLon.lat,"lon": destLatLon.lon};
+    // geojson just wants a tuple/array of [lon, lat]
+    return [destLatLon.lon, destLatLon.lat];
 }
 
+//TODO determine clock direction of these rings
+// geoJSON spec suggests rings go counterclockwise
+// this function goes clockwise but that may not be how the 
+// the data is created in the FOD model
+// this is the equivalent of the "LL" variable in legacy
+// this is for GEOJSON and so it's always LON,LAT 
+function  calcSetbackCoordinates(  
+            startLat:number, 
+            startLon:number, 
+            D:number[][]):setbackCoordinates {
 
-// https://github.com/caseycesari/geojson.js/
+    const degIncrements = 360/D.length
+    const center = [startLon, startLat]
+    // for these rings to be polygons in GIS, the last value must be the same as the first
+    // D has arrays of 3 distance, so add that array of 3 to the end
+                
+    let ll = {
+        center: center,
+        coords5pct: D.map((d,row) => {return(geodeticDistance(startLat, startLon, D[row][0], row*degIncrements))}), // 360-row*degIncrements ???
+        coords3pct: D.map((d,row) => {return(geodeticDistance(startLat, startLon, D[row][1], row*degIncrements))}), 
+        coords1_5pct:D.map((d,row) => {return(geodeticDistance(startLat, startLon, D[row][2], row*degIncrements))})
+    }
+    // complete the rings for geo applications
+    ll.coords5pct.push(ll.coords5pct[0]);
+    ll.coords3pct.push(ll.coords3pct[0]);
+    ll.coords1_5pct.push(ll.coords1_5pct[0]);
 
-function geo2JSON(geography){
+    return(ll);
+	
+}
 
-    return ""
+function setbackToGeoJSON(c: setbackCoordinates):string {
+    // GeoJSON spec requires polygons to be rings with first and last elemen the same 
+    // https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6
+    // and this is how the setbackCoordinates are created
 
+    // function jsonCoordinates(coords){
+    //     return(
+    //         coords.map((coord) => { return( [coord, coord.long] )})
+    //     );
+    // }
+
+    const features = [
+        {
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [c.center[0], c.center[1]]},
+            "properties": {"name": "Odor source", "odor_emission_factor": 0}, /// TODO ADD THIS VALUE HERE
+        },
+        {
+            "type": "Feature",
+            "geometry": {"type": "Polygon", "coordinates": [ c.coords1_5pct ]},
+            "properties": {"name": "1.5% footprint", "level": "1.5%"},
+        },
+        {
+            "type": "Feature",
+            "geometry": {"type": "Polygon", "coordinates": [ c.coords3pct ]},
+            "properties": {"name": "3% footprint", "level": "3%"},
+        },
+        {
+            "type": "Feature",
+            "geometry": {"type": "Polygon", "coordinates": [ c.coords5pct ]},
+            "properties": {"name": "5% footprint", "level": "5%"},
+        },
+    ]
+    return(JSON.stringify({"type": "FeatureCollection", "features": features}, undefined, 2))
 }
 
 function findMinMax(arr: number[][]): { min: number; max: number } {
@@ -98,4 +175,4 @@ function closestGridPoint(lat, lon){
     return [min_x, min_y]; 
 }
 
-export {geodeticDistance, closestGridPoint}
+export {geodeticDistance, closestGridPoint, setbackToGeoJSON, calcSetbackCoordinates, setbackCoordinates, simpleLatLon}
