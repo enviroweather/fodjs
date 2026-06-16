@@ -1,12 +1,13 @@
 <script lang="ts">	
 
 	import { 
-		//geodeticDistance, // no longer needed 
 		closestGridPoint, 
 		setbackToGeoJSON,
 		calcSetbackCoordinates,
+		min_lat, min_lon, max_lat, max_lon,
 		type simpleLatLon, 
-		type setbackCoordinates
+		type setbackCoordinates,
+		
 
 	} from '$lib/geo.js';
 
@@ -25,9 +26,11 @@
 	};
 
 	
+	
 	// ── location state ───────────────────────────────────────────────────────
 	let Lat = $state(44)
 	let Lon = $state(-83)
+
 
 	// ── wind data state ───────────────────────────────────────────────────────
 	// let gridX = $state<number | null>(null);
@@ -188,11 +191,11 @@
 <form onsubmit={(e) => { e.preventDefault(); getAndRun(); }} class="form">
 		<label>
 			Latitude (Y)
-			<input type="number" bind:value={Lat} required />
+			<input type="number" step= "any" min="{min_lat}" max="{max_lat}" bind:value={Lat} required />
 		</label>
 		<label>
 			Longitude (X)
-			<input type="number" bind:value={Lon} required />
+			<input type="number" min="{min_lon}" max="{max_lon}" step= "any" bind:value={Lon} required />
 		</label>
 		<label>
 			Odor index E <span class="range">(positive number)</span>
@@ -283,9 +286,9 @@
 
 			<div class="model-results">
 				<h2>setback GeoJSON</h2>
-				<pre>
+				<textarea rows=70 cols=70>
 {sbGJ}
-				</pre>
+				</textarea>
 
 			</div>
 

@@ -5,6 +5,22 @@
 import LatLon, { Dms } from 'geodesy/latlon-ellipsoidal-vincenty.js';
 import { LAT, LON } from '$lib/data/narr_latlon.json';
 
+// SW of Chicago
+const min_lat = 41.696;
+const min_lon = -90.418;
+// in Ontario, way NE of Sault Ste Marie
+const max_lat = 47.48023;  // don't include isle royale - no farms there!  
+const max_lon = -82.122;
+
+// corresponding bounds reported as y, x
+// these are not currently being used in code below
+// but preserved because I took the time to find them
+// NE 143, 230, SW 118, 215
+const min_x = 215
+const min_y = 118
+const max_x = 230
+const max_y = 143
+
 
 // TODO create proper types for inputs/outputs 
 type GridList = {
@@ -147,32 +163,38 @@ function inBounds(lat, lon){
 }
 
 function closestGridPoint(lat, lon){
-    var min_y = -1;  // if -1 is returned, the loop did not work
-    var min_x = -1;
+    var found_y = -1;  // if -1 is returned, the loop did not work
+    var found_x = -1;
+    // current this assumes lat/lon is in bounds, but TODO defensive programming:
     // if (!inBounds(lat, lon, LAT, LON)){
     // // todo replace with exception raise
     //     return [min_x, min_y]
     // } 
     
-    // alternative to calculation a distance matrix and then find the min the same thing
-    //  loop through y,x and find the min while calculating
-
-    var minDistance = 9999;
+    // the original code first calculated a distance matrix and then find the min distance
+    // unsing numpy vectorized search
+    
+    // this loop through y,x and calculates the distannce and stores the min
+    // it loops through the whole thing.  We could track the number 
+    // of loops since the distance changed and check if it hasn't changed in a while
+    // and stop the loop, but that introduces a conditional for every iteration
+    var minDistance = 999999;  //starting value is high
     var grid_width = LON.length;
     var grid_height = LON[0].length;
 
+    // using min_x, min_y etc to reduce the search space here doesn't make this any faster!
     for (var x = 0; x < grid_width; x++) {
         for (var y = 0; y < grid_height; y++) {
             var distanceFromPoint = (LAT[x][y] - lat)**2 + (LON[x][y] - lon)**2
             if (distanceFromPoint < minDistance){
                 minDistance = distanceFromPoint;
-                min_x  = x; min_y = y;
+                found_x  = x; found_y = y;
             }
         }
     }
 
     // TODO: check for -1 and raise exception if it is
-    return [min_x, min_y]; 
+    return [found_x, found_y]; 
 }
 
-export {geodeticDistance, closestGridPoint, setbackToGeoJSON, calcSetbackCoordinates, setbackCoordinates, simpleLatLon}
+export {geodeticDistance, closestGridPoint, setbackToGeoJSON, calcSetbackCoordinates, setbackCoordinates, simpleLatLon,min_lat, min_lon, max_lat, max_lon}
